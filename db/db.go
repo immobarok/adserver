@@ -53,6 +53,7 @@ func ConnectPostgres() {
 func ConnectRedis() {
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     config.App.RedisAddr,
+		Username: config.App.RedisUsername,
 		Password: config.App.RedisPassword,
 		DB:       config.App.RedisDB,
 	})

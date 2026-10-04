@@ -9,19 +9,20 @@ import (
 )
 
 type Config struct {
-	Port             string
-	GinMode          string
-	DBHost           string
-	DBPort           string
-	DBUser           string
-	DBPassword       string
-	DBName           string
-	DBSSLMode        string
-	RedisAddr        string
-	RedisPassword    string
-	RedisDB          int
-	FrequencyCap     int
-	CacheTTLSeconds  int
+	Port            string
+	GinMode         string
+	DBHost          string
+	DBPort          string
+	DBUser          string
+	DBPassword      string
+	DBName          string
+	DBSSLMode       string
+	RedisAddr       string
+	RedisUsername   string
+	RedisPassword   string
+	RedisDB         int
+	FrequencyCap    int
+	CacheTTLSeconds int
 }
 
 var App *Config
@@ -44,6 +45,7 @@ func Load() {
 		DBName:          getEnv("DB_NAME", "adserver"),
 		DBSSLMode:       getEnv("DB_SSLMODE", "disable"),
 		RedisAddr:       getEnv("REDIS_ADDR", "localhost:6379"),
+		RedisUsername:   getEnv("REDIS_USERNAME", "default"),
 		RedisPassword:   getEnv("REDIS_PASSWORD", ""),
 		RedisDB:         redisDB,
 		FrequencyCap:    freqCap,
