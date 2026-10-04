@@ -1,7 +1,10 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 
@@ -10,6 +13,12 @@ import (
 	"adserver/handlers"
 	"adserver/middleware"
 )
+
+// Embed the entire static directory into the binary at compile time.
+// This means the binary is self-contained — no filesystem dependency on Render.
+//
+//go:embed static
+var staticFiles embed.FS
 
 func main() {
 	// 1. Load configuration
@@ -28,18 +37,23 @@ func main() {
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
 
-	// ── Static files (publisher demo page) ──────────────────────────────
-	r.Static("/static", "./static")
+	// ── Embedded static files ────────────────────────────────────────────
+	// Strips the leading "static" prefix so /static/admin.html works correctly
+	sub, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		log.Fatalf("❌ Failed to create sub-filesystem: %v", err)
+	}
+	r.StaticFS("/static", http.FS(sub))
 
-	// ── Health ──────────────────────────────────────────────────────────
+	// ── Health ───────────────────────────────────────────────────────────
 	r.GET("/health", handlers.HealthCheck)
 
-	// ── Ad serving & tracking ───────────────────────────────────────────
+	// ── Ad serving & tracking ────────────────────────────────────────────
 	r.GET("/ad", handlers.ServeAd)
 	r.GET("/track/impression", handlers.TrackImpression)
 	r.GET("/track/click", handlers.TrackClick)
 
-	// ── REST API v1 ─────────────────────────────────────────────────────
+	// ── REST API v1 ──────────────────────────────────────────────────────
 	api := r.Group("/api/v1")
 	{
 		// Campaigns
