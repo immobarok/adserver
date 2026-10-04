@@ -47,6 +47,11 @@ func main() {
 
 	// ── Health ───────────────────────────────────────────────────────────
 	r.GET("/health", handlers.HealthCheck)
+	
+	// Redirect root to admin dashboard
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/static/admin.html")
+	})
 
 	// ── Ad serving & tracking ────────────────────────────────────────────
 	r.GET("/ad", handlers.ServeAd)
