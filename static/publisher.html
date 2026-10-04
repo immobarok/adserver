@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AdServer Publisher Demo – Live ad tag integration example using the AdServer API." />
+  <title>AdServer – Publisher Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0f17;
+      --surface:  #151822;
+      --card:     #1c1f2e;
+      --border:   #2a2d3e;
+      --accent:   #6c63ff;
+      --accent2:  #ff6584;
+      --text:     #e2e4f0;
+      --muted:    #7b7f9e;
+      --success:  #4ade80;
+      --radius:   14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(21, 24, 34, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: -0.5px;
+    }
+    .logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(108,99,255,.4)} 50%{box-shadow:0 0 0 8px rgba(108,99,255,0)} }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ── Hero ───────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse at center, rgba(108,99,255,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 14px;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 500px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+
+    /* ── Layout ─────────────────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ── Ad slot (top banner) ────────────────────────── */
+    .ad-banner-slot {
+      width: 100%;
+      min-height: 100px;
+      background: linear-gradient(135deg, var(--card), #1a1d2e);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 40px;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+    .ad-banner-slot:hover { border-color: var(--accent); }
+    .ad-banner-slot .slot-label {
+      position: absolute;
+      top: 8px; left: 12px;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── Ad card ────────────────────────────────────── */
+    .ad-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .ad-card a {
+      display: block;
+      width: 100%;
+      text-decoration: none;
+      position: relative;
+    }
+    .ad-card img.ad-img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: calc(var(--radius) - 2px);
+      display: block;
+    }
+    .ad-card .ad-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Content grid ───────────────────────────────── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 28px;
+      align-items: start;
+    }
+    @media(max-width:768px){ .content-grid{ grid-template-columns:1fr; } }
+
+    /* ── Article card ───────────────────────────────── */
+    .article-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+    }
+    .article-card h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .article-card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(108,99,255,0.15);
+      color: var(--accent);
+      margin-right: 6px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Sidebar ad slot ────────────────────────────── */
+    .sidebar-ad-slot {
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 16px;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+    .sidebar-ad-slot:hover { border-color: var(--accent); }
+    .sidebar-ad-slot .slot-label {
+      position: absolute;
+      top: 8px; left: 12px;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── Status panel ───────────────────────────────── */
+    .status-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+    .status-panel h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .status-row:last-child { border-bottom: none; }
+    .status-row .label { color: var(--muted); }
+    .status-row .value { font-weight: 600; }
+    .value.ok { color: var(--success); }
+    .value.loading { color: var(--accent); }
+    .value.error { color: var(--accent2); }
+
+    /* ── Skeleton loader ────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--card) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── Refresh button ─────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      AdServer
+    </div>
+    <span class="badge">Publisher Demo</span>
+  </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Live Ad Tag Demo</h1>
+    <p>This page demonstrates asynchronous ad loading, impression tracking via 1×1 pixel, and click-through redirect — all powered by the AdServer API.</p>
+    <button id="btn-refresh" class="btn btn-primary" onclick="loadAllAds()">
+      ↺ &nbsp;Refresh Ads
+    </button>
+  </div>
+
+  <div class="container">
+
+    <!-- Status Panel -->
+    <div class="status-panel">
+      <h3>Ad Tag Status</h3>
+      <div class="status-row"><span class="label">Banner Slot</span><span id="banner-status" class="value loading">Loading…</span></div>
+      <div class="status-row"><span class="label">Sidebar Slot</span><span id="sidebar-status" class="value loading">Loading…</span></div>
+      <div class="status-row"><span class="label">Server</span><span class="value ok">● Connected</span></div>
+    </div>
+
+    <!-- Top Banner Ad Slot -->
+    <div id="banner-slot" class="ad-banner-slot">
+      <span class="slot-label">Banner Ad · 728×90</span>
+      <div class="skeleton" style="width:90%;height:60px;"></div>
+    </div>
+
+    <!-- Content + Sidebar grid -->
+    <div class="content-grid">
+
+      <!-- Article content -->
+      <div class="article-card">
+        <span class="tag">Technology</span>
+        <h2>Understanding Programmatic Advertising</h2>
+        <p>Programmatic advertising automates the buying and selling of digital ad inventory in real time. At its core, a lightweight ad server selects the highest-bidding creative that passes frequency cap and budget checks, then serves the ad asynchronously so the page load is never blocked.</p>
+        <p>The tracking pixel technique — a 1×1 transparent GIF fetched via a hidden <code>&lt;img&gt;</code> tag — is a privacy-respecting, lightweight way to fire an impression event the moment an ad enters the viewport. No JavaScript trackers, no large payloads.</p>
+        <p>Click tracking uses a server-side redirect: the user's browser hits <code>/track/click</code>, the server records the event, and immediately issues a <code>302</code> redirect to the advertiser's landing page. Sub-millisecond latency ensures a seamless user experience.</p>
+      </div>
+
+      <!-- Sidebar Ad Slot -->
+      <div id="sidebar-slot" class="sidebar-ad-slot">
+        <span class="slot-label">Sidebar Ad · 300×250</span>
+        <div class="skeleton" style="width:100%;height:200px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       Ad Tag Script
+       ════════════════════════════════════ -->
+  <script>
+    const AD_SERVER = '';   // same-origin; change to 'http://localhost:8080' if needed
+
+    let impressionFired = { banner: false, sidebar: false };
+
+    async function fetchAd() {
+      const res = await fetch(`${AD_SERVER}/ad`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function buildAdCard(ad, slotName) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ad-card';
+
+      // Click-track URL that redirects to the advertiser
+      const clickURL = `${AD_SERVER}/track/click?creative_id=${ad.creative_id}&redirect=${encodeURIComponent(ad.click_url)}`;
+
+      wrapper.innerHTML = `
+        <a href="${clickURL}" target="_blank" rel="noopener" id="${slotName}-link">
+          <img
+            class="ad-img"
+            src="${ad.image_url}"
+            alt="${ad.title}"
+            id="${slotName}-img"
+            loading="lazy"
+          />
+        </a>
+        <span class="ad-label">Sponsored · ${ad.title}</span>
+      `;
+
+      // Fire impression pixel once
+      if (!impressionFired[slotName]) {
+        impressionFired[slotName] = true;
+        const pixel = new Image();
+        pixel.src = `${AD_SERVER}${ad.impression_url}`;
+        pixel.style.display = 'none';
+        document.body.appendChild(pixel);
+      }
+
+      return wrapper;
+    }
+
+    async function loadAd(slotId, statusId, slotName) {
+      const slot   = document.getElementById(slotId);
+      const status = document.getElementById(statusId);
+      try {
+        const ad = await fetchAd();
+        slot.innerHTML = '';
+        slot.appendChild(buildAdCard(ad, slotName));
+        status.textContent = '● Served';
+        status.className = 'value ok';
+      } catch (err) {
+        slot.innerHTML = `<span style="color:var(--muted);font-size:.8rem">No ad available</span>`;
+        status.textContent = '✕ ' + err.message;
+        status.className = 'value error';
+      }
+    }
+
+    function loadAllAds() {
+      impressionFired = { banner: false, sidebar: false };
+      document.getElementById('banner-status').textContent  = 'Loading…';
+      document.getElementById('banner-status').className   = 'value loading';
+      document.getElementById('sidebar-status').textContent = 'Loading…';
+      document.getElementById('sidebar-status').className  = 'value loading';
+
+      loadAd('banner-slot',  'banner-status',  'banner');
+      loadAd('sidebar-slot', 'sidebar-status', 'sidebar');
+    }
+
+    // Auto-load on page ready
+    document.addEventListener('DOMContentLoaded', loadAllAds);
+  </script>
+</body>
+</html>
